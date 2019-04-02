@@ -1,5 +1,6 @@
 from flask import Flask, render_template, Response
 from camera import VideoCamera
+import _thread as thread
 
 app = Flask(__name__)
 
@@ -22,5 +23,21 @@ def video_feed():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-if __name__ == '__main__':
+def run_server():
     app.run(host='0.0.0.0', debug=True)
+
+def throw_data():
+    camera = VideoCamera()
+    while True:
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+
+
+if __name__ == '__main__':
+    try:
+        thread.start_new_thread(throw_data, ())
+        thread.start_new_thread(run_server, ())
+    except Exception as e:
+        exit(e)
